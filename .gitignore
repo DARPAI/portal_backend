@@ -1,0 +1,9 @@
+.idea
+*.env
+__pycache__
+venv
+latest.log
+celerybeat-schedule
+.venv
+test.py
+logs

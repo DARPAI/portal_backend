@@ -1,0 +1,19 @@
+services:
+  highkey_postgres:
+    profiles:
+      - ''
+    ports:
+      - "12001:5432"
+    restart: unless-stopped
+
+  highkey_backend:
+    pull_policy: never
+    image: highkey_backend
+    ports:
+      - "12002:80"
+    volumes:
+      - ./:/srv/
+    profiles:
+      - ''
+    command: start-debug.sh
+    restart: unless-stopped

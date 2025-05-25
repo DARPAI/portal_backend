@@ -1,0 +1,56 @@
+services:
+  highkey_postgres:
+    container_name: highkey_postgres
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${PG_USER:-change_me}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-change_me}
+      POSTGRES_DB: ${PG_DB:-change_me}
+    volumes:
+      - /var/lib/highkey/main_db_data:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=500'
+    profiles:
+      - main
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $PG_USER -d $PG_DB" ]
+      interval: 7s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  highkey_backend:
+    container_name: highkey_backend
+    image: ${IMAGE_NAME}:${CI_COMMIT_BRANCH}
+    build:
+      context: .
+    pull_policy: always
+    environment:
+      API_PORT: 80
+      ENVIRONMENT: ${ENVIRONMENT}
+      PG_USER: ${PG_USER}
+      PG_DB: ${PG_DB}
+      PG_PASSWORD: ${PG_PASSWORD}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      LOG_LEVEL: ${LOG_LEVEL}
+    profiles:
+      - main
+    depends_on:
+      highkey_postgres:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      test: curl -f http://localhost:80/healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - /var/lib/highkey/highkey_backend/logs:/workspace/logs
+    command: start.sh
+    restart: always
+
+networks:
+  default:
+    name: highkey_network
+    external: true

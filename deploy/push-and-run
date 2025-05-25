@@ -1,0 +1,12 @@
+#!/bin/sh
+set -ex
+
+. deploy/ssh-agent
+. deploy/docker-version
+
+docker tag "$IMAGE_NAME:$CI_COMMIT_BRANCH" "$IMAGE_NAME:$DATE_TAG"
+docker image push --all-tags "$IMAGE_NAME"
+export DOCKER_HOST="$1"
+
+docker image pull "$IMAGE_NAME:$CI_COMMIT_BRANCH"
+docker compose --profile main up --remove-orphans --wait
