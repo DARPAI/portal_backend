@@ -2,7 +2,7 @@ import logging
 
 from .settings import settings
 
-logger = logging.getLogger("highkey_backend")
+logger = logging.getLogger("portal_backend")
 logger.setLevel(settings.LOG_LEVEL)
 
 formatter = logging.Formatter("[%(asctime)s][%(name)s][%(levelname)s]: %(message)s")

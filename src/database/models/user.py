@@ -12,5 +12,7 @@ from .mixins import HasUpdatedAt
 class User(HasId, HasCreatedAt, HasUpdatedAt, Base):
     __tablename__ = "users"
 
-    wallet_address: Mapped[str] = mapped_column(String, unique=True, nullable=True, index=True)
+    username: Mapped[str] = mapped_column(String, unique=True, nullable=True, index=True)
+    email: Mapped[str] = mapped_column(String, unique=True, nullable=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String, nullable=True, index=True)
     is_registered: Mapped[bool] = mapped_column(Boolean, nullable=False)

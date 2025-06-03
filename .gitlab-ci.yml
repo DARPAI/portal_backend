@@ -16,34 +16,25 @@ build:
   tags:
     - darp-group-shell-runner
   script:
-    - source deploy/docker-version
-    - docker compose build highkey_backend
+    - source cicd/docker-version
+    - docker compose --profile main build
 
-deploy-test:
-  stage: deploy
-  needs: ["build"]
-  when: manual
-  tags:
-    - darp-group-shell-runner
-  script:
-    - deploy/push-and-run "$TEST_DOCKER_HOST"
-
-deploy-memelabs:
-  stage: deploy
-  needs: ["build"]
-  when: manual
-  tags:
-    - darp-group-shell-runner
-  script:
-    - deploy/push-and-run "$MEMELABS_DOCKER_HOST"
-
-deploy-prod:
+deploy-toci-test:
   stage: deploy
   when: manual
   needs: ["build"]
   tags:
     - darp-group-shell-runner
   script:
-    - deploy/push-and-run "$PRODUCTION_DOCKER_HOST"
+    - cicd/push-and-run "$TOCI_TEST_DOCKER_HOST"
+
+deploy-toci-prod:
+  stage: deploy
+  when: manual
+  needs: ["build"]
+  tags:
+    - darp-group-shell-runner
+  script:
+    - cicd/push-and-run "$TOCI_PRODUCTION_DOCKER_HOST"
   rules:
     - if: $CI_COMMIT_BRANCH == "main"

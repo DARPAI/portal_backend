@@ -9,6 +9,7 @@ from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .dependencies import existing_user_id
+from .schemas import UserAuth
 from .schemas import UserCreate
 from .schemas import UserRead
 from .schemas import UserUpdate
@@ -21,17 +22,23 @@ router = APIRouter(prefix="/users")
 add_pagination(router)
 
 
-@router.get("/by_wallet", response_model=UserRead)
-async def get_user_by_wallet(wallet_address: str, service: UserService = Depends(UserService.get_new_instance)) -> User:
-    return await service.get_user_by_wallet(wallet_address)
-
-
 @router.get("/{user_id}", response_model=UserRead)
 async def get_single_user(user_id: str, service: UserService = Depends(UserService.get_new_instance)) -> User:
     return await service.get_single_user(user_id=user_id)
 
 
-@router.get("/", response_model=Page[UserRead])
+@router.get("/", response_model=UserAuth)
+async def get_user_by_metadata(
+    user_id: str | None = None,
+    username: str | None = None,
+    email: str | None = None,
+    service: UserService = Depends(UserService.get_new_instance),
+) -> User:
+    user = await service.get_single_user(user_id=user_id, username=username, email=email)
+    return user
+
+
+@router.get("/list", response_model=Page[UserRead])
 async def list_users(
     params: Params = Depends(),
     session: AsyncSession = Depends(get_session),
@@ -46,7 +53,7 @@ async def create_user(data: UserCreate, service: UserService = Depends(UserServi
     return await service.create_user(user_data=data)
 
 
-@router.put("/{user_id}", response_model=UserRead)
+@router.put("/{user_id}", response_model=UserAuth)
 async def update_agent(
     user_id: str, data: UserUpdate, service: UserService = Depends(UserService.get_new_instance)
 ) -> User:

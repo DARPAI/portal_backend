@@ -1,8 +1,8 @@
 #!/bin/sh
 set -ex
 
-. deploy/ssh-agent
-. deploy/docker-version
+. cicd/ssh-agent
+. cicd/docker-version
 
 docker tag "$IMAGE_NAME:$CI_COMMIT_BRANCH" "$IMAGE_NAME:$DATE_TAG"
 docker image push --all-tags "$IMAGE_NAME"

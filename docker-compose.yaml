@@ -1,13 +1,13 @@
 services:
-  highkey_postgres:
-    container_name: highkey_postgres
+  portal_postgres:
+    container_name: portal_postgres
     image: postgres:17
     environment:
-      POSTGRES_USER: ${PG_USER:-change_me}
+      POSTGRES_USER: ${PG_USER:-portal}
       POSTGRES_PASSWORD: ${PG_PASSWORD:-change_me}
       POSTGRES_DB: ${PG_DB:-change_me}
     volumes:
-      - /var/lib/highkey/main_db_data:/var/lib/postgresql/data
+      - /var/lib/portal/main_db_data:/var/lib/postgresql/data
     command: postgres -c 'max_connections=500'
     profiles:
       - main
@@ -19,8 +19,8 @@ services:
       start_period: 5s
     restart: always
 
-  highkey_backend:
-    container_name: highkey_backend
+  portal_backend:
+    container_name: portal_backend
     image: ${IMAGE_NAME}:${CI_COMMIT_BRANCH}
     build:
       context: .
@@ -36,7 +36,7 @@ services:
     profiles:
       - main
     depends_on:
-      highkey_postgres:
+      portal_postgres:
         condition: service_healthy
         restart: true
     healthcheck:
@@ -52,5 +52,4 @@ services:
 
 networks:
   default:
-    name: highkey_network
-    external: true
+    name: portal_network
