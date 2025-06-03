@@ -6,18 +6,27 @@ from src.base_schema import BaseSchema
 class UserRead(BaseSchema):
     id: str
     is_registered: bool
-    wallet_address: str | None
+    username: str | None
     updated_at: datetime
     created_at: datetime
 
 
+class UserProfile(UserRead):
+    email: str | None
+
+
+class UserAuth(UserProfile):
+    hashed_password: str | None
+
+
 class UserCreate(BaseSchema):
-    wallet_address: str | None = None
     is_registered: bool = False
 
 
 class UserUpdateData(BaseSchema):
-    wallet_address: str | None = None
+    username: str | None = None
+    email: str | None = None
+    hashed_password: str | None = None
     is_registered: bool | None = None
 
 

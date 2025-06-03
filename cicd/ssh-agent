@@ -8,4 +8,4 @@ cat "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 cat "$SSH_KEY" > ~/.ssh/key
 chmod 600 ~/.ssh/known_hosts ~/.ssh/key
 eval $(ssh-agent -s)
-DISPLAY=1 SSH_ASKPASS=deploy/ssh-passphrase ssh-add ~/.ssh/key
+DISPLAY=1 SSH_ASKPASS=cicd/ssh-passphrase ssh-add ~/.ssh/key

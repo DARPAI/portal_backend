@@ -30,7 +30,7 @@ class MessageCreate(BaseSchema):
 class ToolCallResult(BaseSchema):
     server_name: str
     tool_name: str
-    result: dict | list | str
+    result: dict | list | str | bool | None
     success: bool
 
 

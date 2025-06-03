@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     PG_USER: str
     PG_DB: str
     PG_PASSWORD: str
-    PG_HOST: str = "highkey_postgres"
+    PG_HOST: str = "portal_postgres"
     PG_PORT: int = 5432
 
     DB_POOL_SIZE: int = 50
@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     DEFAULT_AVATAR_URL: str = (
         "https://toci-s3-bucket-aws-02.s3.eu-central-1.amazonaws.com/8883fe75-ce0f-4546-9fbb-65d75d45568a.png"
     )
-    DEFAULT_AGENT_SERVER_IDS: list[int] = [1]
-    DEFAULT_AGENT_NAME: str = "Highkey"
+    DEFAULT_AGENT_SERVER_IDS: list[int] = []
+    DEFAULT_AGENT_NAME: str = "Default"
     DEFAULT_AGENT_DESCRIPTION: str = "Default agent"
 
     OPENROUTER_API_KEY: str

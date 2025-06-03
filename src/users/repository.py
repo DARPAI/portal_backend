@@ -3,6 +3,7 @@ from typing import Self
 from fastapi import Depends
 from sqlalchemy import delete
 from sqlalchemy import exists
+from sqlalchemy import or_
 from sqlalchemy import Select
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,13 +18,17 @@ class UserRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def get_user(self, user_id: str | None = None, wallet_address: str | None = None) -> User | None:
-        assert user_id or wallet_address, "Incorrect params"
+    async def get_user(
+        self, user_id: str | None = None, username: str | None = None, email: str | None = None
+    ) -> User | None:
+        assert user_id or username or email, "Incorrect params"
         query = select(User)
         if user_id:
             query = query.where(User.id == user_id)
-        if wallet_address:
-            query = query.where(User.wallet_address == wallet_address)
+        if username:
+            query = query.where(User.username == username)
+        if email:
+            query = query.where(User.email == email)
         user = (await self.session.execute(query)).scalar_one_or_none()
         return user
 
@@ -54,13 +59,26 @@ class UserRepository:
         query = delete(User).where(User.id == user_id)
         await self.session.execute(query)
 
-    async def user_exists(self, user_id: str | None = None, wallet_address: str | None = None) -> bool:
-        assert user_id or wallet_address, "Incorrect params"
+    async def user_exists(
+        self, user_id: str | None = None, username: str | None = None, email: str | None = None
+    ) -> bool:
+        assert user_id or username or email, "Incorrect params"
         exists_query = exists("*").select_from(User)
         if user_id:
             exists_query = exists_query.where(User.id == user_id)
-        if wallet_address:
-            exists_query = exists_query.where(User.wallet_address == wallet_address)
+        if username:
+            exists_query = exists_query.where(User.username == username)
+        if email:
+            exists_query = exists_query.where(User.email == email)
+        query = select(exists_query)
+        return await self.session.scalar(query)
+
+    async def updated_user_exists(self, update_data: UserUpdateData) -> bool:
+        exists_query = (
+            exists("*")
+            .select_from(User)
+            .where(or_(User.email == update_data.email, User.username == update_data.username))
+        )
         query = select(exists_query)
         return await self.session.scalar(query)
 
