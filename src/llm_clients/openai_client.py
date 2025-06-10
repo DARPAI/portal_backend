@@ -71,15 +71,13 @@ class OpenAIClient:
         stream: bool = False,
         tools: list[ChatCompletionToolParam] | None = None,
     ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
-        system_message: list[dict] = []
-        if system_prompt:
-            # Anthropic prompt caching
-            system_message = [{"role": "system", "content": system_prompt, "cache_control": {"type": "ephemeral"}}]
-        final_conversation = system_message + conversation
+        full_conversation = self._get_full_conversation(
+            conversation=conversation, model=model, system_prompt=system_prompt
+        )
         try:
             response = await self.llm_client.chat.completions.create(
                 model=model,
-                messages=final_conversation,
+                messages=full_conversation,
                 max_tokens=max_tokens,
                 stream=stream,
                 tools=tools or NOT_GIVEN,
@@ -97,6 +95,17 @@ class OpenAIClient:
             logger.error(f"Request to Provider failed with the following exception:\n{e}")
             raise RemoteServerError("LLM request failed")
         return response
+
+    def _get_full_conversation(
+        self, conversation: list[ChatCompletionMessageParam], model: str, system_prompt: str | None = None
+    ) -> list[ChatCompletionMessageParam]:
+        if not system_prompt:
+            return conversation
+        system_message = [{"role": "system", "content": system_prompt}]
+        if model.startswith("anthropic"):
+            # Anthropic prompt caching
+            system_message[-1]["cache_control"] = dict(type="ephemeral")  # type: ignore
+        return system_message + conversation
 
     @staticmethod
     def get_empty_openai_tool_call() -> dict:

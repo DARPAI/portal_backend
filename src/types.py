@@ -14,4 +14,5 @@ class LLMProvider(StrEnum):
 LLMModel = Literal[
     "anthropic/claude-3.7-sonnet",
     "anthropic/claude-3.5-haiku",
+    "deepseek/deepseek-chat-v3-0324",
 ]
