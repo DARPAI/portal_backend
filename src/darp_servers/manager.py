@@ -16,6 +16,7 @@ from src.messages.schemas import ToolCallResult
 class ToolManager:
     def __init__(self, darp_servers: list[DARPServer]) -> None:
         self.renamed_tools: dict[str, ToolInfo] = {}
+        self.original_to_renamed: dict[str, str] = {}
         self.tools: list[ChatCompletionToolParam] = []
         self.darp_servers = darp_servers
         self.set_tools()
@@ -23,6 +24,7 @@ class ToolManager:
     def rename_and_save(self, tool_name: str, server: DARPServer) -> str:
         renamed_tool = f"{tool_name}_darp_{server.name}"
         self.renamed_tools[renamed_tool] = ToolInfo(tool_name=tool_name, server=server)
+        self.original_to_renamed[tool_name] = renamed_tool
         return renamed_tool
 
     def set_tools(self) -> None:
@@ -76,8 +78,14 @@ class ToolManager:
         avatar = tool_info.server.logo if tool_info else None
         arguments = tool_call.function.arguments
         return ToolCallData(
+            tool_call_id=tool_call.id,
             server_id=server_id,
             server_logo=avatar,
             tool_name=tool_info.tool_name,
             arguments=json.loads(arguments) if arguments else None,
         )
+
+    def rename_tool_calls(self, tool_calls: list[ToolCallData]) -> list[ToolCallData]:
+        for tool_call in tool_calls:
+            tool_call.tool_name = self.original_to_renamed[tool_call.tool_name]
+        return tool_calls

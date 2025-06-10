@@ -1,9 +1,9 @@
+import json
 from typing import Literal
 from typing import Self
 
 from fastapi import Depends
 from openai.types.chat import ChatCompletionAssistantMessageParam
-from openai.types.chat import ChatCompletionMessageToolCall
 from openai.types.chat import ChatCompletionToolMessageParam
 from sqlalchemy import delete
 from sqlalchemy import exists
@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .schemas import MessageCreate
+from .schemas import ToolCallData
 from .types import MessageSource
 from src.database import Agent
 from src.database import get_session
@@ -56,7 +57,7 @@ class MessageRepository:
         self,
         chat_id: str,
         agent: Agent,
-        tool_calls: list[ChatCompletionMessageToolCall],
+        tool_calls: list[ToolCallData],
         creation_data: MessageCreate,
     ) -> Message:
         message = Message(
@@ -115,14 +116,17 @@ class MessageRepository:
         return dict(content=text_message, role="user")
 
     @staticmethod
-    def format_llm_message(
-        text: str | None, tool_calls: list[ChatCompletionMessageToolCall]
-    ) -> ChatCompletionAssistantMessageParam:
+    def format_llm_message(text: str | None, tool_calls: list[ToolCallData]) -> ChatCompletionAssistantMessageParam:
         llm_tool_calls = [
             {
-                "id": tool_call.id,
-                "function": {"arguments": tool_call.function.arguments, "name": tool_call.function.name},
+                "id": tool_call.tool_call_id,
+                "function": {
+                    "arguments": json.dumps(tool_call.arguments) if tool_call.arguments else "{}",
+                    "name": tool_call.tool_name,
+                },
                 "type": "function",
+                "server_id": tool_call.server_id,
+                "server_logo": tool_call.server_logo,
             }
             for tool_call in tool_calls
         ]
