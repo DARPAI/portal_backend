@@ -74,11 +74,17 @@ class UserRepository:
         return await self.session.scalar(query)
 
     async def updated_user_exists(self, update_data: UserUpdateData) -> bool:
-        exists_query = (
-            exists("*")
-            .select_from(User)
-            .where(or_(User.email == update_data.email, User.username == update_data.username))
-        )
+        exists_query = exists("*").select_from(User)
+        conditions = []
+
+        if update_data.username is not None:
+            conditions.append(User.username == update_data.username)
+
+        if update_data.email is not None:
+            conditions.append(exists_query.where(User.email == update_data.email))
+
+        exists_query = exists_query.where(or_(*conditions))
+
         query = select(exists_query)
         return await self.session.scalar(query)
 
