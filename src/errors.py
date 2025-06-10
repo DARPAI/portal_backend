@@ -13,22 +13,22 @@ class FastApiError(HTTPException):
 
 
 class NotFoundError(FastApiError):
-    error_code = status.HTTP_404_NOT_FOUND
+    status_code = status.HTTP_404_NOT_FOUND
     message = "Entity not found"
 
 
 class AlreadyExistsError(FastApiError):
-    error_code = status.HTTP_400_BAD_REQUEST
+    status_code = status.HTTP_400_BAD_REQUEST
     message = "Entity already exists"
 
 
 class NotAllowedError(FastApiError):
-    error_code = status.HTTP_403_FORBIDDEN
+    status_code = status.HTTP_403_FORBIDDEN
     message = "Not allowed"
 
 
 class InvalidData(FastApiError):
-    error_code = status.HTTP_400_BAD_REQUEST
+    status_code = status.HTTP_400_BAD_REQUEST
     message = "One or more invalid fields"
 
 
@@ -37,7 +37,7 @@ class InternalError(FastApiError):
 
 
 class RemoteServerError(FastApiError):
-    error_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     message = "Remote server error"
 
 

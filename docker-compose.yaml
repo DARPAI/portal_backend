@@ -46,7 +46,7 @@ services:
       retries: 3
       start_period: 30s
     volumes:
-      - /var/lib/highkey/highkey_backend/logs:/workspace/logs
+      - /var/lib/highkey/portal_backend/logs:/workspace/logs
     command: start.sh
     restart: always
 
