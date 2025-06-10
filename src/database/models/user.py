@@ -16,3 +16,4 @@ class User(HasId, HasCreatedAt, HasUpdatedAt, Base):
     email: Mapped[str] = mapped_column(String, unique=True, nullable=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String, nullable=True, index=True)
     is_registered: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_email_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

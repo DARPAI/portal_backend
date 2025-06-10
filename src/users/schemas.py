@@ -6,6 +6,7 @@ from src.base_schema import BaseSchema
 class UserRead(BaseSchema):
     id: str
     is_registered: bool
+    is_email_confirmed: bool
     username: str | None
     updated_at: datetime
     created_at: datetime
@@ -28,6 +29,7 @@ class UserUpdateData(BaseSchema):
     email: str | None = None
     hashed_password: str | None = None
     is_registered: bool | None = None
+    is_email_confirmed: bool | None = None
 
 
 class UserUpdate(BaseSchema):
