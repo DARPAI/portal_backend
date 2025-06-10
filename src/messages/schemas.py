@@ -1,4 +1,8 @@
 from datetime import datetime
+from typing import Literal
+
+from pydantic import ConfigDict
+from pydantic import RootModel
 
 from .types import EventType
 from .types import MessageSource
@@ -35,6 +39,7 @@ class ToolCallResult(BaseSchema):
 
 
 class ToolCallData(BaseSchema):
+    tool_call_id: str
     server_logo: str | None
     server_id: int | None
     tool_name: str
@@ -44,3 +49,20 @@ class ToolCallData(BaseSchema):
 class Event(BaseSchema):
     event_type: EventType
     data: TextChunkData | MessageRead | ToolCallData | ToolCallResult
+
+
+class LLMToolCall(BaseSchema):
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
+
+    id: str
+    function: dict
+    type: Literal["function"]
+
+
+LLMToolCalls = RootModel[list[LLMToolCall]]
+
+
+class AssistantMessage(BaseSchema):
+    role: Literal["assistant"]
+    content: str | None
+    tool_calls: LLMToolCalls | None  # type: ignore

@@ -11,10 +11,12 @@ from sqlalchemy import Select
 from ..darp_servers.registry_client import RegistryClient
 from .constants import provider_to_client
 from .repository import MessageRepository
+from .schemas import AssistantMessage
 from .schemas import Event
 from .schemas import MessageCreate
 from .schemas import MessageCreateData
 from .schemas import MessageRead
+from .schemas import ToolCallData
 from .types import EventType
 from .types import MessageSource
 from src.agents.repository import AgentRepository
@@ -69,12 +71,21 @@ class MessageService:
         messages = (await self.repo.session.execute(messages_query)).scalars().all()
         return list(messages)
 
-    @staticmethod
-    def get_formatted_messages(messages: list[Message]) -> list[ChatCompletionMessageParam]:
-        formatted_messages = []
+    def get_formatted_messages(self, messages: list[Message]) -> list[ChatCompletionMessageParam]:
+        formatted_messages: list[ChatCompletionMessageParam] = []
         for message in messages:
-            formatted_messages += message.content
+            formatted_messages += self.format_message_for_llm(message)
         return formatted_messages
+
+    @staticmethod
+    def format_message_for_llm(message: Message) -> list[ChatCompletionMessageParam]:
+        llm_messages: list[ChatCompletionMessageParam] = []
+        if message.source != MessageSource.llm:
+            return message.content  # type: ignore
+        for content in message.content:
+            assistant_message = AssistantMessage.model_validate(content).model_dump()
+            llm_messages.append(assistant_message)  # type: ignore
+        return llm_messages
 
     async def create_llm_message(
         self,
@@ -96,6 +107,7 @@ class MessageService:
         )
         collected_text_message = []
         tool_calls = []
+        db_tool_calls: list[ToolCallData] = []
         async for chunk in llm_stream:
             if isinstance(chunk, TextChunkData):
                 collected_text_message.append(chunk.content)
@@ -107,11 +119,12 @@ class MessageService:
                 tool_call_data = tool_manager.format_tool_call(tool_call)
                 yield Event(event_type=EventType.tool_call, data=tool_call_data).model_dump_json()
                 tool_calls.append(tool_call)
+                db_tool_calls.append(tool_call_data)
         llm_message_text = "".join(collected_text_message) if collected_text_message else None
         llm_message = await self.repo.create_llm_message(
             chat_id=chat_id,
             agent=agent,
-            tool_calls=tool_calls,
+            tool_calls=tool_manager.rename_tool_calls(db_tool_calls),
             creation_data=MessageCreate(current_user_id=current_user_id, data=MessageCreateData(text=llm_message_text)),
         )
         llm_message_data = MessageRead.model_validate(llm_message)
