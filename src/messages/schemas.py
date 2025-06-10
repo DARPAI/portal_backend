@@ -28,14 +28,15 @@ class MessageCreate(BaseSchema):
 
 
 class ToolCallResult(BaseSchema):
-    server_name: str
+    server_id: int | None
     tool_name: str
     result: dict | list | str | bool | None
     success: bool
 
 
 class ToolCallData(BaseSchema):
-    server_name: str
+    server_logo: str | None
+    server_id: int | None
     tool_name: str
     arguments: dict | None
 

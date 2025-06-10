@@ -46,7 +46,7 @@ class ToolManager:
         tool_info = self.renamed_tools.get(tool_call.function.name)
         if not tool_info:
             return ToolCallResult(
-                server_name="", tool_name=tool_call.function.name, result="Error: Incorrect tool name", success=False
+                server_id=None, tool_name=tool_call.function.name, result="Error: Incorrect tool name", success=False
             )
         server = tool_info.server
         async with sse_client(server.url) as (read, write):
@@ -62,7 +62,7 @@ class ToolManager:
                 except JSONDecodeError:
                     tool_result = result.content[0].text
                 return ToolCallResult(
-                    server_name=server.name,
+                    server_id=int(server.id),
                     tool_name=tool_info.tool_name,
                     result=tool_result or "Error",
                     success=not result.isError,
@@ -72,10 +72,12 @@ class ToolManager:
         tool_info = self.renamed_tools.get(tool_call.function.name)
         if not tool_info:
             raise RemoteServerError("Incorrect tool call from LLM")
-        server_name = tool_info.server.name if tool_info else ""
+        server_id = int(tool_info.server.id) if tool_info else None
+        avatar = tool_info.server.logo if tool_info else None
         arguments = tool_call.function.arguments
         return ToolCallData(
-            server_name=server_name,
+            server_id=server_id,
+            server_logo=avatar,
             tool_name=tool_info.tool_name,
             arguments=json.loads(arguments) if arguments else None,
         )
