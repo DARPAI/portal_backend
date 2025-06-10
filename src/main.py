@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.agents.router import router as agents_router
 from src.chats.router import router as chats_router
+from src.images.router import router as images_router
 from src.users.router import router as users_router
 
 
@@ -27,6 +28,7 @@ app.add_middleware(
 app.include_router(users_router)
 app.include_router(agents_router)
 app.include_router(chats_router)
+app.include_router(images_router)
 
 
 @app.get("/healthcheck")

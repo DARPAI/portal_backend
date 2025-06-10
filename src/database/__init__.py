@@ -3,6 +3,7 @@ from .models.agent import agents_darp_servers
 from .models.base import Base
 from .models.chat import Chat
 from .models.darp_server import DARPServer
+from .models.image import Image
 from .models.message import Message
 from .models.user import User
 from .session import database_url_async
@@ -15,6 +16,7 @@ __all__ = [
     "get_session",
     "Agent",
     "Chat",
+    "Image",
     "User",
     "database_url_sync",
     "database_url_async",

@@ -33,6 +33,11 @@ services:
       PG_PASSWORD: ${PG_PASSWORD}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       LOG_LEVEL: ${LOG_LEVEL}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS: ${S3_ACCESS}
+      S3_SECRET: ${S3_SECRET}
+      S3_HOST: ${S3_HOST}
+      CDN_BASE_URL: ${CDN_BASE_URL}
     profiles:
       - main
     depends_on:
