@@ -38,7 +38,7 @@ class UserService:
             raise InvalidData("No parameters present")
         user = await self.repo.get_user(user_id=user_id, username=username, email=email)
         if not user:
-            raise NotFoundError(detail="User does not exist")
+            raise NotFoundError(message="User does not exist")
         return user
 
     async def get_users(self) -> Select:
@@ -49,7 +49,7 @@ class UserService:
             raise NotAllowedError("Not allowed")
         user_exists = await self.repo.user_exists(user_id=user_id)
         if not user_exists:
-            raise NotFoundError(detail="User with this id does not exist")
+            raise NotFoundError(message="User with this id does not exist")
         updated_user_exists = await self.repo.updated_user_exists(update_data=data.update_data)
         if updated_user_exists:
             raise InvalidData("This username or email is already in use")
