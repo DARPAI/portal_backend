@@ -36,5 +36,11 @@ class Settings(BaseSettings):
 
     OPENROUTER_API_KEY: str
 
+    S3_ACCESS: str
+    S3_SECRET: str
+    S3_BUCKET: str
+    S3_HOST: str
+    CDN_BASE_URL: str
+
 
 settings = Settings()
