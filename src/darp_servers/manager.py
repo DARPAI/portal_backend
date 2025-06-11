@@ -1,4 +1,5 @@
 import json
+from asyncio import Queue
 from json import JSONDecodeError
 
 from mcp import ClientSession
@@ -7,19 +8,25 @@ from openai.types.chat import ChatCompletionMessageToolCall
 from openai.types.chat import ChatCompletionToolParam
 
 from src.agents.types import ToolInfo
+from src.darp_servers.log_collector import LogCollector
 from src.database import DARPServer
 from src.errors import RemoteServerError
+from src.messages.schemas import DeepResearchLogData
+from src.messages.schemas import GenericLogData
 from src.messages.schemas import ToolCallData
 from src.messages.schemas import ToolCallResult
 
 
 class ToolManager:
-    def __init__(self, darp_servers: list[DARPServer]) -> None:
+    def __init__(
+        self, darp_servers: list[DARPServer], queue: Queue[ToolCallResult | DeepResearchLogData | GenericLogData]
+    ) -> None:
         self.renamed_tools: dict[str, ToolInfo] = {}
         self.original_to_renamed: dict[str, str] = {}
         self.tools: list[ChatCompletionToolParam] = []
         self.darp_servers = darp_servers
         self.set_tools()
+        self.queue = queue
 
     def rename_and_save(self, tool_name: str, server: DARPServer) -> str:
         renamed_tool = f"{tool_name}_darp_{server.name}"
@@ -44,15 +51,22 @@ class ToolManager:
                 )
         self.tools = tools
 
-    async def handle_tool_call(self, tool_call: ChatCompletionMessageToolCall) -> ToolCallResult:
+    async def handle_tool_call(self, tool_call: ChatCompletionMessageToolCall) -> None:
         tool_info = self.renamed_tools.get(tool_call.function.name)
         if not tool_info:
-            return ToolCallResult(
-                server_id=None, tool_name=tool_call.function.name, result="Error: Incorrect tool name", success=False
+            await self.queue.put(
+                ToolCallResult(
+                    tool_call_id=tool_call.id,
+                    server_id=None,
+                    tool_name=tool_call.function.name,
+                    result="Error: Incorrect tool name",
+                    success=False,
+                )
             )
+            return
         server = tool_info.server
         async with sse_client(server.url) as (read, write):
-            async with ClientSession(read, write) as session:
+            async with ClientSession(read, write, logging_callback=LogCollector(queue=self.queue)) as session:
                 await session.initialize()
 
                 result = await session.call_tool(
@@ -63,11 +77,14 @@ class ToolManager:
                     tool_result = json.loads(result.content[0].text)
                 except JSONDecodeError:
                     tool_result = result.content[0].text
-                return ToolCallResult(
-                    server_id=int(server.id),
-                    tool_name=tool_info.tool_name,
-                    result=tool_result or "Error",
-                    success=not result.isError,
+                await self.queue.put(
+                    ToolCallResult(
+                        tool_call_id=tool_call.id,
+                        server_id=int(server.id),
+                        tool_name=tool_info.tool_name,
+                        result=tool_result or "Error",
+                        success=not result.isError,
+                    )
                 )
 
     def format_tool_call(self, tool_call: ChatCompletionMessageToolCall) -> ToolCallData:
