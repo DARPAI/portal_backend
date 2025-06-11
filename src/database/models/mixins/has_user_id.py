@@ -1,5 +1,4 @@
 from sqlalchemy import Column
-from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import declarative_mixin
 from sqlalchemy.orm import declared_attr
@@ -9,4 +8,4 @@ from sqlalchemy.orm import declared_attr
 class HasUserId:
     @declared_attr
     def user_id(cls):
-        return Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+        return Column(String, nullable=False, index=True)
