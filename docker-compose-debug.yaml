@@ -3,14 +3,14 @@ services:
     profiles:
       - ''
     ports:
-      - "12001:5432"
+      - "${PORTAL_POSTGRES_PORT:-12001}:5432"
     restart: unless-stopped
 
   portal_backend:
     pull_policy: never
     image: portal_backend
     ports:
-      - "12002:80"
+      - "${PORTAL_BACKEND_PORT:-12002}:80"
     volumes:
       - ./:/srv/
     profiles:

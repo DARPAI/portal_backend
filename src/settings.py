@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     REGISTRY_URL: str = "http://registry:80"
 
     PG_USER: str
-    PG_DB: str
     PG_PASSWORD: str
+    PG_DB: str = "portal_backend"
     PG_HOST: str = "portal_postgres"
     PG_PORT: int = 5432
 
