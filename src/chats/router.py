@@ -21,7 +21,6 @@ from src.errors import InvalidData
 from src.messages.schemas import MessageCreate
 from src.messages.schemas import MessageRead
 from src.messages.service import MessageService
-from src.users.dependencies import valid_current_user_id
 
 router = APIRouter(prefix="/chats")
 
@@ -31,7 +30,7 @@ add_pagination(router)
 @router.get("/{chat_id}", response_model=ChatRead)
 async def get_single_chat(
     chat_id: str,
-    current_user_id: str = Depends(valid_current_user_id),
+    current_user_id: str,
     service: ChatService = Depends(ChatService.get_new_instance),
 ) -> Chat:
     return await service.get_single_chat(chat_id=chat_id, current_user_id=current_user_id)
@@ -46,7 +45,7 @@ async def update_chat(
 
 @router.get("/", response_model=Page[ChatRead])
 async def list_chats(
-    current_user_id: str = Depends(valid_current_user_id),
+    current_user_id: str,
     params: Params = Depends(),
     session: AsyncSession = Depends(get_session),
     service: ChatService = Depends(ChatService.get_new_instance),
@@ -63,7 +62,7 @@ async def create_chat(data: ChatCreate, service: ChatService = Depends(ChatServi
 @router.delete("/{chat_id}")
 async def delete_chat(
     chat_id: str,
-    current_user_id: str = Depends(valid_current_user_id),
+    current_user_id: str,
     service: ChatService = Depends(ChatService.get_new_instance),
 ) -> None:
     return await service.delete_chat(chat_id=chat_id, current_user_id=current_user_id)
@@ -72,7 +71,7 @@ async def delete_chat(
 @router.get("/{chat_id}/messages", response_model=Page[MessageRead])
 async def get_chat_messages(
     chat_id: str,
-    current_user_id: str = Depends(valid_current_user_id),
+    current_user_id: str,
     params: Params = Depends(),
     session: AsyncSession = Depends(get_session),
     service: MessageService = Depends(MessageService.get_new_instance),
