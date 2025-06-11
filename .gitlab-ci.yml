@@ -10,6 +10,15 @@ test-pre-commit:
   script:
     - source ~/miniconda3/bin/activate && pre-commit run --all-files
 
+test-migrations:
+  stage: test
+  tags:
+    - darp-group-shell-runner
+  script:
+    - duplicates=`grep -h down_revision alembic/versions/*.py | sort | uniq -d`
+    - echo "$duplicates"
+    - test -z "$duplicates"
+
 build:
   stage: build
   when: manual
