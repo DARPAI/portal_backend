@@ -19,7 +19,7 @@ class AgentData(BaseSchema):
 class AgentCreate(BaseSchema):
     agent_data: AgentData
     current_user_id: str
-    server_ids: list[int]
+    server_ids: list[int] = settings.DEFAULT_AGENT_SERVER_IDS
 
 
 class AgentRead(BaseSchema):
