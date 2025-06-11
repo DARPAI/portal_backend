@@ -3,14 +3,14 @@ from typing import Literal
 from typing import Self
 
 from fastapi import Depends
-from openai.types.chat import ChatCompletionAssistantMessageParam
-from openai.types.chat import ChatCompletionToolMessageParam
 from sqlalchemy import delete
 from sqlalchemy import exists
 from sqlalchemy import Select
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from .schemas import DeepResearchLogData
+from .schemas import GenericLogData
 from .schemas import MessageCreate
 from .schemas import ToolCallData
 from .types import MessageSource
@@ -73,9 +73,19 @@ class MessageRepository:
         return message
 
     async def create_tool_message(
-        self, chat_id: str, agent: Agent, tool_call_id: str, tool_call_result: str, current_user_id: str
+        self,
+        chat_id: str,
+        agent: Agent,
+        tool_call_id: str,
+        tool_call_result: str,
+        current_user_id: str,
+        tool_call_logs: list[DeepResearchLogData | GenericLogData],
     ) -> Message:
-        message_content = [self.format_tool_message(tool_call_id=tool_call_id, tool_call_result=tool_call_result)]
+        message_content = [
+            self.format_tool_message(
+                tool_call_id=tool_call_id, tool_call_result=tool_call_result, tool_call_logs=tool_call_logs
+            )
+        ]
         message = Message(
             chat_id=chat_id,
             agent_id=agent.id,
@@ -89,8 +99,15 @@ class MessageRepository:
         return message
 
     @staticmethod
-    def format_tool_message(tool_call_id: str, tool_call_result: str) -> ChatCompletionToolMessageParam:
-        return ChatCompletionToolMessageParam(tool_call_id=tool_call_id, content=tool_call_result, role="tool")
+    def format_tool_message(
+        tool_call_id: str, tool_call_result: str, tool_call_logs: list[DeepResearchLogData | GenericLogData]
+    ) -> dict:
+        return dict(
+            tool_call_id=tool_call_id,
+            content=tool_call_result,
+            role="tool",
+            tool_call_logs=[log.model_dump() for log in tool_call_logs],
+        )
 
     async def delete_message(self, message_id: str) -> None:
         query = delete(Message).where(Message.id == message_id)
@@ -116,7 +133,7 @@ class MessageRepository:
         return dict(content=text_message, role="user")
 
     @staticmethod
-    def format_llm_message(text: str | None, tool_calls: list[ToolCallData]) -> ChatCompletionAssistantMessageParam:
+    def format_llm_message(text: str | None, tool_calls: list[ToolCallData]) -> dict:
         llm_tool_calls = [
             {
                 "id": tool_call.tool_call_id,
@@ -130,9 +147,7 @@ class MessageRepository:
             }
             for tool_call in tool_calls
         ]
-        return ChatCompletionAssistantMessageParam(
-            role="assistant", content=text, tool_calls=llm_tool_calls if len(llm_tool_calls) > 0 else None
-        )
+        return dict(role="assistant", content=text, tool_calls=llm_tool_calls if len(llm_tool_calls) > 0 else None)
 
     @classmethod
     def get_new_instance(

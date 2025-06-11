@@ -1,4 +1,6 @@
+import asyncio
 import json
+from asyncio import Queue
 from collections.abc import AsyncGenerator
 from typing import Any
 from typing import Self
@@ -12,11 +14,15 @@ from ..darp_servers.registry_client import RegistryClient
 from .constants import provider_to_client
 from .repository import MessageRepository
 from .schemas import AssistantMessage
+from .schemas import DeepResearchLogData
 from .schemas import Event
+from .schemas import GenericLogData
 from .schemas import MessageCreate
 from .schemas import MessageCreateData
 from .schemas import MessageRead
 from .schemas import ToolCallData
+from .schemas import ToolCallResult
+from .schemas import ToolMessageForLLM
 from .types import EventType
 from .types import MessageSource
 from src.agents.repository import AgentRepository
@@ -79,13 +85,18 @@ class MessageService:
 
     @staticmethod
     def format_message_for_llm(message: Message) -> list[ChatCompletionMessageParam]:
-        llm_messages: list[ChatCompletionMessageParam] = []
-        if message.source != MessageSource.llm:
-            return message.content  # type: ignore
-        for content in message.content:
-            assistant_message = AssistantMessage.model_validate(content).model_dump()
-            llm_messages.append(assistant_message)  # type: ignore
-        return llm_messages
+        llm_messages = []
+        if message.source == MessageSource.llm:
+            for content in message.content:
+                assistant_message = AssistantMessage.model_validate(content).model_dump()
+                llm_messages.append(assistant_message)  # type: ignore
+            return llm_messages
+        if message.source == MessageSource.tool:
+            for content in message.content:
+                tool_message = ToolMessageForLLM.model_validate(content).model_dump()
+                llm_messages.append(tool_message)  # type: ignore
+            return llm_messages
+        return message.content  # type: ignore
 
     async def create_llm_message(
         self,
@@ -152,18 +163,27 @@ class MessageService:
     ) -> AsyncGenerator[str, Any]:
         call_result_messages = []
         for tool_call in tool_calls:
-            tool_call_result = await tool_manager.handle_tool_call(tool_call)
-            yield Event(event_type=EventType.tool_call_result, data=tool_call_result).model_dump_json()
-            tool_result_message = await self.repo.create_tool_message(
-                chat_id=chat_id,
-                agent=agent,
-                tool_call_id=tool_call.id,
-                tool_call_result=json.dumps(tool_call_result.result),
-                current_user_id=current_user_id,
-            )
-            call_result_messages.append(tool_result_message)
-            message_data = MessageRead.model_validate(tool_result_message)
-            yield Event(event_type=EventType.message_creation, data=message_data).model_dump_json()
+            tool_call_logs: list[DeepResearchLogData | GenericLogData] = []
+            asyncio.create_task(tool_manager.handle_tool_call(tool_call))
+            events = self.procure_tool_call_events(tool_manager)
+            async for event in events:
+                if event.event_type == EventType.tool_call_logs:
+                    yield event.model_dump_json()
+                    tool_call_logs.append(event.data)
+                    continue
+                yield event.model_dump_json()
+                tool_result_message = await self.repo.create_tool_message(
+                    chat_id=chat_id,
+                    agent=agent,
+                    tool_call_id=event.data.tool_call_id,
+                    tool_call_result=json.dumps(event.data.result),
+                    current_user_id=current_user_id,
+                    tool_call_logs=tool_call_logs,
+                )
+                call_result_messages.append(tool_result_message)
+                message_data = MessageRead.model_validate(tool_result_message)
+                yield Event(event_type=EventType.message_creation, data=message_data).model_dump_json()
+
         # Follow up llm message
         new_event_stream = self.create_llm_message(
             agent=agent,
@@ -175,6 +195,14 @@ class MessageService:
         async for new_chunk in new_event_stream:
             yield new_chunk
 
+    async def procure_tool_call_events(self, tool_manager: ToolManager) -> AsyncGenerator[Event, Any]:
+        while True:
+            tool_call_event = await tool_manager.queue.get()
+            if isinstance(tool_call_event, ToolCallResult):
+                yield Event(event_type=EventType.tool_call_result, data=tool_call_event)
+                break
+            yield Event(event_type=EventType.tool_call_logs, data=tool_call_event)
+
     async def get_tool_manager(self, query: str, routing: bool, agent: Agent) -> ToolManager:
         if routing:
             registry_servers = await self.registry_client.get_fitting_servers(query=query)
@@ -183,7 +211,7 @@ class MessageService:
             servers = await self.server_repo.get_servers_by_ids(server_ids=string_ids)
         else:
             servers = await self.server_repo.get_servers_by_agent(agent_id=agent.id)
-        return ToolManager(darp_servers=servers)
+        return ToolManager(darp_servers=servers, queue=Queue())
 
     @classmethod
     def get_new_instance(
