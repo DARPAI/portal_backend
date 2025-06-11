@@ -11,6 +11,7 @@ class DARPServerRead(BaseSchema):
     name: str
     description: str | None = None
     logo: str | None = None
+    transport_protocol: str
     updated_at: datetime
 
     @field_serializer("id")
@@ -35,6 +36,7 @@ class RegistryServerSchema(BaseSchema):
     description: str
     url: str
     logo: str | None = None
+    transport_protocol: str
     tools: list[dict]
 
     @field_validator("id", mode="before")  # noqa

@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 
+from ...darp_servers.enums import DARPServerTransportProtocol
 from .base import Base
 from .mixins import HasUpdatedAt
 
@@ -17,3 +18,7 @@ class DARPServer(HasUpdatedAt, Base):
     url: Mapped[str] = mapped_column(String, nullable=False)
     logo: Mapped[str | None] = mapped_column(String, nullable=True)
     tools: Mapped[list[dict]] = mapped_column(JSONB, nullable=False)
+    transport_protocol: Mapped[DARPServerTransportProtocol] = mapped_column(
+        String(),
+        nullable=False,
+    )

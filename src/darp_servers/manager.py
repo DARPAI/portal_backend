@@ -1,13 +1,16 @@
 import json
 from asyncio import Queue
+from contextlib import _AsyncGeneratorContextManager
 from json import JSONDecodeError
 
 from mcp import ClientSession
 from mcp.client.sse import sse_client
+from mcp.client.streamable_http import streamablehttp_client
 from openai.types.chat import ChatCompletionMessageToolCall
 from openai.types.chat import ChatCompletionToolParam
 
 from src.agents.types import ToolInfo
+from src.darp_servers.enums import DARPServerTransportProtocol
 from src.darp_servers.log_collector import LogCollector
 from src.database import DARPServer
 from src.errors import RemoteServerError
@@ -65,7 +68,9 @@ class ToolManager:
             )
             return
         server = tool_info.server
-        async with sse_client(server.url) as (read, write):
+        client_ctx = self._get_client_context(server.url, server.transport_protocol)
+
+        async with client_ctx as (read, write, *_):
             async with ClientSession(read, write, logging_callback=LogCollector(queue=self.queue)) as session:
                 await session.initialize()
 
@@ -106,3 +111,18 @@ class ToolManager:
         for tool_call in tool_calls:
             tool_call.tool_name = self.original_to_renamed[tool_call.tool_name]
         return tool_calls
+
+    @classmethod
+    def _get_client_context(
+        cls,
+        server_url: str,
+        transport_protocol: DARPServerTransportProtocol,
+    ) -> _AsyncGeneratorContextManager:
+        if transport_protocol == DARPServerTransportProtocol.STREAMABLE_HTTP:
+            client_ctx = streamablehttp_client(server_url)
+        elif transport_protocol == DARPServerTransportProtocol.SSE:
+            client_ctx = sse_client(server_url)
+        else:
+            raise RuntimeError("Unsupported transport protocol: %s", transport_protocol.name)
+
+        return client_ctx
