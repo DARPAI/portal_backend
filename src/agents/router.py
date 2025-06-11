@@ -15,7 +15,6 @@ from .schemas import AgentWithServers
 from .service import AgentService
 from src.database import Agent
 from src.database import get_session
-from src.users.dependencies import valid_current_user_id
 
 router = APIRouter(prefix="/agents")
 
@@ -25,7 +24,7 @@ add_pagination(router)
 @router.get("/{agent_id}", response_model=AgentWithServers)
 async def get_single_agent(
     agent_id: str,
-    current_user_id: str = Depends(valid_current_user_id),
+    current_user_id: str,
     service: AgentService = Depends(AgentService.get_new_instance),
 ) -> Agent:
     return await service.get_single_agent(agent_id=agent_id, current_user_id=current_user_id)
@@ -40,7 +39,7 @@ async def update_agent(
 
 @router.get("/", response_model=Page[AgentRead])
 async def list_agents(
-    current_user_id: str = Depends(valid_current_user_id),
+    current_user_id: str,
     params: Params = Depends(),
     session: AsyncSession = Depends(get_session),
     service: AgentService = Depends(AgentService.get_new_instance),
@@ -57,7 +56,7 @@ async def create_agent(data: AgentCreate, service: AgentService = Depends(AgentS
 @router.delete("/{agent_id}")
 async def delete_agent(
     agent_id: str,
-    current_user_id: str = Depends(valid_current_user_id),
+    current_user_id: str,
     service: AgentService = Depends(AgentService.get_new_instance),
 ) -> None:
     return await service.delete_agent(agent_id=agent_id, current_user_id=current_user_id)
