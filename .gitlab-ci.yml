@@ -1,0 +1,49 @@
+stages:
+  - test
+  - build
+  - deploy
+
+test-pre-commit:
+  stage: test
+  tags:
+    - darp-group-shell-runner
+  script:
+    - source ~/miniconda3/bin/activate && pre-commit run --all-files
+
+test-migrations:
+  stage: test
+  tags:
+    - darp-group-shell-runner
+  script:
+    - duplicates=`grep -h down_revision alembic/versions/*.py | sort | uniq -d`
+    - echo "$duplicates"
+    - test -z "$duplicates"
+
+build:
+  stage: build
+  when: manual
+  tags:
+    - darp-group-shell-runner
+  script:
+    - source cicd/docker-version
+    - docker compose --profile main build
+
+deploy-toci-test:
+  stage: deploy
+  when: manual
+  needs: ["build"]
+  tags:
+    - darp-group-shell-runner
+  script:
+    - cicd/push-and-run "$TOCI_TEST_DOCKER_HOST"
+
+deploy-toci-prod:
+  stage: deploy
+  when: manual
+  needs: ["build"]
+  tags:
+    - darp-group-shell-runner
+  script:
+    - cicd/push-and-run "$TOCI_PRODUCTION_DOCKER_HOST"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"

@@ -1,0 +1,60 @@
+services:
+  portal_postgres:
+    container_name: portal_postgres
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${PG_USER:-${POSTGRES_USER:-portal}}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-${POSTGRES_PASSWORD:-change_me}}
+      POSTGRES_DB: ${PG_DB:-${POSTGRES_DB:-portal_backend}}
+    volumes:
+      - /var/lib/portal/main_db_data:/var/lib/postgresql/data
+    command: postgres -c 'max_connections=500'
+    profiles:
+      - main
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${PG_USER:-${POSTGRES_USER:-portal}} -d ${PG_DB:-${POSTGRES_DB:-portal_backend}}" ]
+      interval: 7s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  portal_backend:
+    container_name: portal_backend
+    image: ${IMAGE_NAME:-portal_backend}:${CI_COMMIT_BRANCH:-local}
+    build:
+      context: .
+    pull_policy: always
+    environment:
+      API_PORT: 80
+      ENVIRONMENT: ${ENVIRONMENT:-}
+      PG_USER: ${PG_USER:-${POSTGRES_USER:-portal}}
+      PG_PASSWORD: ${PG_PASSWORD:-${POSTGRES_PASSWORD:-change_me}}
+      PG_DB: ${PG_DB:-${POSTGRES_DB:-portal_backend}}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS: ${S3_ACCESS}
+      S3_SECRET: ${S3_SECRET}
+      S3_HOST: ${S3_HOST}
+      CDN_BASE_URL: ${CDN_BASE_URL}
+    profiles:
+      - main
+    depends_on:
+      portal_postgres:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      test: curl -f http://localhost:80/healthcheck
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - /var/lib/highkey/portal_backend/logs:/workspace/logs
+    command: start.sh
+    restart: always
+
+networks:
+  default:
+    name: ${DOCKER_NETWORK:-portal_network}

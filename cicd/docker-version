@@ -1,0 +1,5 @@
+#!/bin/sh
+
+DATE="$(date +%F)";
+export IMAGE_NAME="hipasus/portal_backend"
+export DATE_TAG="0.0-$DATE"
