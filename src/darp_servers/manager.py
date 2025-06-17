@@ -31,17 +31,17 @@ class ToolManager:
         self.set_tools()
         self.queue = queue
 
-    def rename_and_save(self, tool_name: str, server: DARPServer) -> str:
-        renamed_tool = f"{tool_name}_darp_{server.name}"
-        self.renamed_tools[renamed_tool] = ToolInfo(tool_name=tool_name, server=server)
-        self.original_to_renamed[tool_name] = renamed_tool
-        return renamed_tool
+    def rename_and_save(self, tool_name: str, server: DARPServer, alias: str | None) -> str:
+        alias = alias or f"{tool_name}__{server.name}"
+        self.renamed_tools[alias] = ToolInfo(tool_name=tool_name, server=server)
+        self.original_to_renamed[tool_name] = alias
+        return alias
 
     def set_tools(self) -> None:
         tools = []
         for server in self.darp_servers:
             for tool in server.tools:
-                tool_name = self.rename_and_save(tool["name"], server=server)
+                tool_name = self.rename_and_save(tool_name=tool["name"], server=server, alias=tool.get("alias", None))
                 tools.append(
                     ChatCompletionToolParam(
                         type="function",

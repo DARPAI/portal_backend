@@ -1,9 +1,17 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import field_serializer
 from pydantic import field_validator
 
 from src.base_schema import BaseSchema
+
+
+class ToolSchema(BaseSchema):
+    name: str
+    alias: str
+    description: str
+    input_schema: dict[str, Any]
 
 
 class DARPServerRead(BaseSchema):
@@ -37,9 +45,13 @@ class RegistryServerSchema(BaseSchema):
     url: str
     logo: str | None = None
     transport_protocol: str
-    tools: list[dict]
+    tools: list[ToolSchema]
 
     @field_validator("id", mode="before")  # noqa
     @classmethod
     def validate_a(cls, value: int) -> str:
         return str(value)
+
+    @field_serializer("tools")
+    def serialize_tools(self, tools: list[ToolSchema], _info) -> list[dict]:
+        return [tool.model_dump() for tool in tools]
