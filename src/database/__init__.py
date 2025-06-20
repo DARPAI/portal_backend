@@ -5,6 +5,7 @@ from .models.chat import Chat
 from .models.darp_server import DARPServer
 from .models.image import Image
 from .models.message import Message
+from .models.report import Report
 from .session import database_url_async
 from .session import database_url_sync
 from .session import get_session
@@ -20,6 +21,7 @@ __all__ = [
     "database_url_async",
     "DARPServer",
     "Message",
+    "Report",
     "agents_darp_servers",
     "manage_stream_session",
 ]
