@@ -10,6 +10,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat import ChatCompletionMessageToolCall
 from sqlalchemy import Select
 
+from ..chats.types import RoutingMode
 from ..darp_servers.registry_client import RegistryClient
 from .constants import provider_to_client
 from .repository import MessageRepository
@@ -203,14 +204,14 @@ class MessageService:
                 break
             yield Event(event_type=EventType.tool_call_logs, data=tool_call_event)
 
-    async def get_tool_manager(self, query: str, routing: bool, agent: Agent) -> ToolManager:
-        if routing:
-            registry_servers = await self.registry_client.get_fitting_servers(query=query)
+    async def get_tool_manager(self, query: str, routing_mode: RoutingMode, agent: Agent) -> ToolManager:
+        if routing_mode == RoutingMode.off:
+            servers = await self.server_repo.get_servers_by_agent(agent_id=agent.id)
+        else:
+            registry_servers = await self.registry_client.get_fitting_servers(query=query, routing_mode=routing_mode)
             await self.server_repo.upsert_servers(servers=registry_servers)
             string_ids = [str(server.id) for server in registry_servers]
             servers = await self.server_repo.get_servers_by_ids(server_ids=string_ids)
-        else:
-            servers = await self.server_repo.get_servers_by_agent(agent_id=agent.id)
         return ToolManager(darp_servers=servers, queue=Queue())
 
     @classmethod
