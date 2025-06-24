@@ -15,9 +15,7 @@ test-migrations:
   tags:
     - darp-group-shell-runner
   script:
-    - duplicates=`grep -h down_revision alembic/versions/*.py | sort | uniq -d`
-    - echo "$duplicates"
-    - test -z "$duplicates"
+    - cicd/check_duplicate_revisions.sh
 
 build:
   stage: build
