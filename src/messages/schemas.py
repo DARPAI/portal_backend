@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import ConfigDict
 from pydantic import RootModel
 
+from ..chats.types import RoutingMode
 from .types import DeepResearchLogEvent
 from .types import EventType
 from .types import MessageSource
@@ -30,7 +31,7 @@ class MessageCreateData(BaseSchema):
 class MessageCreate(BaseSchema):
     current_user_id: str
     data: MessageCreateData
-    routing: bool = False
+    routing_mode: RoutingMode = RoutingMode.auto
 
 
 class ToolCallResult(BaseSchema):

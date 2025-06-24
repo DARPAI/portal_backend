@@ -89,7 +89,7 @@ async def create_message(
     agent = await service.new_message_agent(chat_id=chat_id, current_user_id=data.current_user_id)
     previous_messages = await service.get_previous_messages(chat_id=chat_id)
     message = await service.create_user_message(chat_id=chat_id, creation_data=data, agent=agent)
-    tool_manager = await service.get_tool_manager(query=data.data.text, routing=data.routing, agent=agent)
+    tool_manager = await service.get_tool_manager(query=data.data.text, routing_mode=data.routing_mode, agent=agent)
     stream_generator = service.create_llm_message(
         agent=agent,
         tool_manager=tool_manager,
