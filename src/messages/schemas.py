@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import Any
 from typing import Literal
+from typing import TypeAlias
+from typing import Union
 
 from pydantic import ConfigDict
 from pydantic import RootModel
@@ -71,9 +73,19 @@ class GenericLogData(BaseSchema):
     data: Any
 
 
+class ErrorData(BaseSchema):
+    status_code: int
+    detail: dict
+
+
+EventData: TypeAlias = Union[
+    TextChunkData, MessageRead, ToolCallData, ToolCallResult, DeepResearchLogData, GenericLogData, ErrorData
+]
+
+
 class Event(BaseSchema):
     event_type: EventType
-    data: TextChunkData | MessageRead | ToolCallData | ToolCallResult | DeepResearchLogData | GenericLogData
+    data: EventData
 
 
 class LLMToolCall(BaseSchema):
