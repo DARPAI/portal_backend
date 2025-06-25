@@ -13,6 +13,7 @@ class EventType(StrEnum):
     tool_call = "tool_call"
     tool_call_logs = "tool_call_logs"
     tool_call_result = "tool_call_result"
+    error = "error"
 
 
 class DeepResearchLogEvent(StrEnum):
