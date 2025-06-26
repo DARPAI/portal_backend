@@ -6,3 +6,9 @@ class EventType(StrEnum):
     text_chunk = "text_chunk"
     tool_call = "tool_call"
     tool_call_result = "tool_call_result"
+
+
+class RoutingMode(StrEnum):
+    auto = "auto"
+    deepresearch = "deepresearch"
+    off = "off"

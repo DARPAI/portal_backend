@@ -9,6 +9,7 @@ from sqlalchemy import Select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette import EventSourceResponse
 
+from ..messages.helpers import convert_stream_errors
 from .schemas import ChatCreate
 from .schemas import ChatRead
 from .schemas import ChatUpdate
@@ -89,7 +90,7 @@ async def create_message(
     agent = await service.new_message_agent(chat_id=chat_id, current_user_id=data.current_user_id)
     previous_messages = await service.get_previous_messages(chat_id=chat_id)
     message = await service.create_user_message(chat_id=chat_id, creation_data=data, agent=agent)
-    tool_manager = await service.get_tool_manager(query=data.data.text, routing=data.routing, agent=agent)
+    tool_manager = await service.get_tool_manager(query=data.data.text, routing_mode=data.routing_mode, agent=agent)
     stream_generator = service.create_llm_message(
         agent=agent,
         tool_manager=tool_manager,
@@ -97,4 +98,5 @@ async def create_message(
         chat_id=chat_id,
         current_user_id=data.current_user_id,
     )
-    return EventSourceResponse(manage_stream_session(stream_generator, service.repo.session))
+    wrapped_stream = convert_stream_errors(stream_generator)
+    return EventSourceResponse(manage_stream_session(wrapped_stream, service.repo.session))

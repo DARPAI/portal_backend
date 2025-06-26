@@ -3,6 +3,7 @@ from typing import Self
 from httpx import AsyncClient
 from httpx import Response
 
+from ..chats.types import RoutingMode
 from .schemas import RegistryServerSchema
 from src.errors import InvalidData
 from src.errors import RemoteServerError
@@ -25,8 +26,10 @@ class RegistryClient:
             raise RemoteServerError("Error getting server from registry")
         return self._collect_servers(response)
 
-    async def get_fitting_servers(self, query: str):
-        response = await self.client.get(url="/servers/search", params=dict(query=query))
+    async def get_fitting_servers(self, query: str, routing_mode: RoutingMode):
+        response = await self.client.get(
+            url="/servers/search", params=dict(query=query, routing_mode=routing_mode.value)
+        )
         if response.status_code != 200:
             logger.error(f"Registry request failed. {response.status_code=}, {response.content=}")
             raise RemoteServerError("Error getting server info")

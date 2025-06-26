@@ -1,10 +1,13 @@
 from datetime import datetime
 from typing import Any
 from typing import Literal
+from typing import TypeAlias
+from typing import Union
 
 from pydantic import ConfigDict
 from pydantic import RootModel
 
+from ..chats.types import RoutingMode
 from .types import DeepResearchLogEvent
 from .types import EventType
 from .types import MessageSource
@@ -30,7 +33,7 @@ class MessageCreateData(BaseSchema):
 class MessageCreate(BaseSchema):
     current_user_id: str
     data: MessageCreateData
-    routing: bool = False
+    routing_mode: RoutingMode = RoutingMode.auto
 
 
 class ToolCallResult(BaseSchema):
@@ -70,9 +73,19 @@ class GenericLogData(BaseSchema):
     data: Any
 
 
+class ErrorData(BaseSchema):
+    status_code: int
+    detail: dict
+
+
+EventData: TypeAlias = Union[
+    TextChunkData, MessageRead, ToolCallData, ToolCallResult, DeepResearchLogData, GenericLogData, ErrorData
+]
+
+
 class Event(BaseSchema):
     event_type: EventType
-    data: TextChunkData | MessageRead | ToolCallData | ToolCallResult | DeepResearchLogData | GenericLogData
+    data: EventData
 
 
 class LLMToolCall(BaseSchema):
